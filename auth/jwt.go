@@ -1,4 +1,4 @@
-package jwt
+package auth
 
 import (
 	"crypto/rsa"
@@ -34,7 +34,7 @@ type GinJWTMiddleware struct {
 	// Optional, default to success.
 	Authorizator func(userID string, c *gin.Context) bool
 
-	// User can define own Unauthorized func.
+	// User can define own UnauthorizedFunc func.
 	Unauthorized func(*gin.Context, int, string)
 
 	// Set the identity handler function
