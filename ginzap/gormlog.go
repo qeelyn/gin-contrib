@@ -1,12 +1,12 @@
-package zap
+package ginzap
 
 import (
-	"time"
 	"fmt"
-	"unicode"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap"
 	"github.com/jinzhu/gorm"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"time"
+	"unicode"
 )
 
 // gorm zap GormLog

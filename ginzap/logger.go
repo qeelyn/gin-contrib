@@ -1,9 +1,9 @@
-package zap
+package ginzap
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
-	"fmt"
 )
 
 import (
@@ -13,8 +13,8 @@ import (
 )
 
 type Logger struct {
-	zap   *zap.Logger
-	sugar *zap.SugaredLogger
+	zap        *zap.Logger
+	sugar      *zap.SugaredLogger
 	ToZapField func(values []interface{}) []zapcore.Field
 }
 
@@ -48,7 +48,7 @@ func NewLogger(config map[string]interface{}) *Logger {
 	})
 
 	level := zap.InfoLevel
-	if cLevel,ok := config["level"].(int);ok{
+	if cLevel, ok := config["level"].(int); ok {
 		if cLevel > -1 && cLevel < 5 {
 			level = levelConv(int8(cLevel))
 		}
@@ -89,15 +89,15 @@ func (l *Logger) Debugf(format string, args ...interface{}) {
 }
 
 func (l *Logger) Infof(format string, args ...interface{}) {
-	l.sugar.Infof(format,args)
+	l.sugar.Infof(format, args)
 }
 
 func (l *Logger) Warnf(format string, args ...interface{}) {
-	l.sugar.Warnf(format,args)
+	l.sugar.Warnf(format, args)
 }
 
 func (l *Logger) Errorf(format string, args ...interface{}) {
-	l.sugar.Errorf(format,args)
+	l.sugar.Errorf(format, args)
 }
 
 func (l *Logger) Debug(args ...interface{}) {
@@ -123,6 +123,7 @@ func (l *Logger) Print(values ...interface{}) {
 
 // for gorm & zap
 func (l *Logger) Println(values []interface{}) {
-	l.GetZap().Info("gorm", l.ToZapField(values)...)
+	if l.ToZapField != nil {
+		l.GetZap().Info("gorm", l.ToZapField(values)...)
+	}
 }
-

@@ -1,22 +1,22 @@
 package cache
 
 import (
-	"net/http"
-	"github.com/gin-gonic/gin"
-	"time"
-	"net/url"
-	"crypto/sha1"
-	"io"
 	"bytes"
-	"sync"
+	"crypto/sha1"
+	"github.com/gin-gonic/gin"
 	"github.com/qeelyn/go-common/cache"
+	"io"
+	"net/http"
+	"net/url"
+	"sync"
+	"time"
 )
 
 const (
 	CACHE_MIDDLEWARE_KEY = "gincontrib.cache"
 )
 
-var(
+var (
 	PageCachePrefix = "gincontrib.page.cache"
 )
 
@@ -188,4 +188,3 @@ func CachePageWithoutHeaderHandle(store cache.Cache, expire time.Duration, handl
 		handle(c)
 	}
 }
-
