@@ -48,9 +48,10 @@ func NewLogger(config map[string]interface{}) *Logger {
 	})
 
 	level := zap.InfoLevel
-	var cLevel = config["level"].(int)
-	if cLevel > -1 && cLevel < 5 {
-		level = levelConv(int8(cLevel))
+	if cLevel,ok := config["level"].(int);ok{
+		if cLevel > -1 && cLevel < 5 {
+			level = levelConv(int8(cLevel))
+		}
 	}
 	core := zapcore.NewCore(
 		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
