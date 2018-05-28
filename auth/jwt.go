@@ -32,13 +32,13 @@ type GinJWTMiddleware struct {
 	// Callback function that should perform the authorization of the authenticated user. Called
 	// only after an authentication success. Must return true on success, false on failure.
 	// Optional, default to success.
-	Authorizator func(userID string, c *gin.Context) bool
+	Authorizator func(data interface{}, c *gin.Context) bool
 
 	// User can define own UnauthorizedFunc func.
 	Unauthorized func(*gin.Context, int, string)
 
 	// Set the identity handler function
-	IdentityHandler func(claims *jwt.StandardClaims) string
+	IdentityHandler func(claims jwt.MapClaims) interface{}
 
 	// TokenLookup is a string in the form of "<source>:<name>" that is used
 	// to extract token from the request.
@@ -111,13 +111,17 @@ var (
 )
 
 func (mw *GinJWTMiddleware) readKeys() error {
-	err := mw.privateKey()
-	if err != nil {
-		return err
+	if mw.PrivKeyFile != "" {
+		err := mw.privateKey()
+		if err != nil {
+			return err
+		}
 	}
-	err = mw.publicKey()
-	if err != nil {
-		return err
+	if mw.PubKeyFile != "" {
+		err := mw.publicKey()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -173,7 +177,7 @@ func (mw *GinJWTMiddleware) MiddlewareInit() error {
 	}
 
 	if mw.Authorizator == nil {
-		mw.Authorizator = func(userID string, c *gin.Context) bool {
+		mw.Authorizator = func(data interface{}, c *gin.Context) bool {
 			return true
 		}
 	}
@@ -188,8 +192,8 @@ func (mw *GinJWTMiddleware) MiddlewareInit() error {
 	}
 
 	if mw.IdentityHandler == nil {
-		mw.IdentityHandler = func(claims *jwt.StandardClaims) string {
-			return claims.Audience
+		mw.IdentityHandler = func(claims jwt.MapClaims) interface{} {
+			return claims["sub"]
 		}
 	}
 
@@ -203,13 +207,10 @@ func (mw *GinJWTMiddleware) MiddlewareInit() error {
 		return ErrMissingRealm
 	}
 
-	if mw.usingPublicKeyAlgo() {
-		return mw.readKeys()
+	if err := mw.readKeys(); err != nil {
+		return err
 	}
 
-	if mw.Key == nil {
-		return ErrMissingSecretKey
-	}
 	return nil
 }
 
@@ -236,11 +237,7 @@ func (mw *GinJWTMiddleware) middlewareImpl(c *gin.Context) {
 		return
 	}
 
-	claims, ok := token.Claims.(*jwt.StandardClaims)
-	if !ok {
-		mw.unauthorized(c, http.StatusBadRequest, mw.HTTPStatusMessageFunc(ErrForbidden, c))
-		return
-	}
+	claims := token.Claims.(jwt.MapClaims)
 
 	id := mw.IdentityHandler(claims)
 	c.Set("userId", id)
@@ -269,10 +266,10 @@ func (mw *GinJWTMiddleware) TokenGenerator(userID string) (string, time.Time, er
 
 	token := jwt.New(jwt.GetSigningMethod(mw.SigningAlgorithm))
 	expire := time.Now().Add(mw.Timeout)
-	claims := jwt.StandardClaims{
-		Audience:  userID,
-		IssuedAt:  time.Now().Unix(),
-		ExpiresAt: expire.Unix(),
+	claims := jwt.MapClaims{
+		"sub": userID,
+		"iat": time.Now().Unix(),
+		"exp": expire.Unix(),
 	}
 	token.Claims = claims
 	tokenString, err := mw.signedString(token)
@@ -336,14 +333,12 @@ func (mw *GinJWTMiddleware) parseToken(c *gin.Context) (*jwt.Token, error) {
 		return nil, err
 	}
 
-	return jwt.ParseWithClaims(token, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
-		if jwt.GetSigningMethod(mw.SigningAlgorithm) != token.Method {
-			return nil, ErrInvalidSigningAlgorithm
-		}
-		if mw.usingPublicKeyAlgo() {
+	return jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		if strings.HasPrefix("HS", token.Method.Alg()) {
+			return mw.Key, nil
+		} else {
 			return mw.pubKey, nil
 		}
-		return mw.Key, nil
 	})
 }
 
