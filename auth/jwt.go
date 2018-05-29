@@ -34,8 +34,8 @@ type GinJWTMiddleware struct {
 	// Optional, default to success.
 	TokenValidator func(token *jwt.Token, c *gin.Context) bool
 
-	// User can define own UnauthorizedFunc func.
-	Unauthorized func(*gin.Context, int, string)
+	// User can define own UnauthorizedFunc func.if return true,request will abort
+	UnauthorizedHandle func(*gin.Context, int, string) bool
 
 	// Set the identity handler function
 	IdentityHandler func(claims jwt.MapClaims) interface{}
@@ -151,8 +151,8 @@ func (mw *GinJWTMiddleware) usingPublicKeyAlgo() bool {
 	return false
 }
 
-// MiddlewareInit initialize jwt configs.
-func (mw *GinJWTMiddleware) MiddlewareInit() error {
+// Init initialize jwt configs.
+func (mw *GinJWTMiddleware) Init() error {
 
 	if mw.TokenLookup == "" {
 		mw.TokenLookup = "header:Authorization"
@@ -173,12 +173,13 @@ func (mw *GinJWTMiddleware) MiddlewareInit() error {
 		}
 	}
 
-	if mw.Unauthorized == nil {
-		mw.Unauthorized = func(c *gin.Context, code int, message string) {
+	if mw.UnauthorizedHandle == nil {
+		mw.UnauthorizedHandle = func(c *gin.Context, code int, message string) bool {
 			c.JSON(code, gin.H{
 				"code":    code,
 				"message": message,
 			})
+			return true
 		}
 	}
 
@@ -205,9 +206,9 @@ func (mw *GinJWTMiddleware) MiddlewareInit() error {
 	return nil
 }
 
-// MiddlewareFunc makes GinJWTMiddleware implement the Middleware interface.
-func (mw *GinJWTMiddleware) MiddlewareFunc() gin.HandlerFunc {
-	if err := mw.MiddlewareInit(); err != nil {
+// Handle makes GinJWTMiddleware implement the Middleware interface.
+func (mw *GinJWTMiddleware) Handle() gin.HandlerFunc {
+	if err := mw.Init(); err != nil {
 		return func(c *gin.Context) {
 			mw.unauthorized(c, http.StatusInternalServerError, mw.HTTPStatusMessageFunc(err, nil))
 			return
@@ -334,15 +335,12 @@ func (mw *GinJWTMiddleware) parseToken(c *gin.Context) (*jwt.Token, error) {
 }
 
 func (mw *GinJWTMiddleware) unauthorized(c *gin.Context, code int, message string) {
+	if mw.UnauthorizedHandle(c, code, message) {
+		if mw.Realm == "" {
+			mw.Realm = "gin jwt"
+		}
 
-	if mw.Realm == "" {
-		mw.Realm = "gin jwt"
+		c.Header("WWW-Authenticate", "JWT realm="+mw.Realm)
+		c.Abort()
 	}
-
-	c.Header("WWW-Authenticate", "JWT realm="+mw.Realm)
-	c.Abort()
-
-	mw.Unauthorized(c, code, message)
-
-	return
 }
