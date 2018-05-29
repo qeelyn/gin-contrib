@@ -32,7 +32,7 @@ type GinJWTMiddleware struct {
 	// Callback function that should perform the authorization of the authenticated user. Called
 	// only after an authentication success. Must return true on success, false on failure.
 	// Optional, default to success.
-	Authorizator func(data interface{}, c *gin.Context) bool
+	TokenValidator func(token *jwt.Token, c *gin.Context) bool
 
 	// User can define own UnauthorizedFunc func.
 	Unauthorized func(*gin.Context, int, string)
@@ -51,9 +51,6 @@ type GinJWTMiddleware struct {
 
 	// TokenHeadName is a string in the header. Default value is "Bearer"
 	TokenHeadName string
-
-	// TimeFunc provides the current time. You can override it to use another time value. This is useful for testing or if your server uses a different time zone than your tokens.
-	TimeFunc func() time.Time
 
 	// HTTP Status messages for when something in the JWT middleware fails.
 	// Check error (e) to determine the appropriate error message.
@@ -176,8 +173,8 @@ func (mw *GinJWTMiddleware) MiddlewareInit() error {
 		mw.TokenHeadName = "Bearer"
 	}
 
-	if mw.Authorizator == nil {
-		mw.Authorizator = func(data interface{}, c *gin.Context) bool {
+	if mw.TokenValidator == nil {
+		mw.TokenValidator = func(token *jwt.Token, c *gin.Context) bool {
 			return true
 		}
 	}
@@ -237,15 +234,15 @@ func (mw *GinJWTMiddleware) middlewareImpl(c *gin.Context) {
 		return
 	}
 
+	if !mw.TokenValidator(token, c) {
+		mw.unauthorized(c, http.StatusForbidden, mw.HTTPStatusMessageFunc(ErrForbidden, c))
+		return
+	}
+
 	claims := token.Claims.(jwt.MapClaims)
 
 	id := mw.IdentityHandler(claims)
 	c.Set("userId", id)
-
-	if !mw.Authorizator(id, c) {
-		mw.unauthorized(c, http.StatusForbidden, mw.HTTPStatusMessageFunc(ErrForbidden, c))
-		return
-	}
 
 	c.Next()
 }
