@@ -73,9 +73,6 @@ var (
 	// ErrMissingRealm indicates Realm name is required
 	ErrMissingRealm = errors.New("realm is missing")
 
-	// ErrMissingSecretKey indicates Secret key is required
-	ErrMissingSecretKey = errors.New("secret key is required")
-
 	// ErrForbidden when HTTP status 403 is given
 	ErrForbidden = errors.New("you don't have permission to access this resource")
 
@@ -90,9 +87,6 @@ var (
 
 	// ErrEmptyCookieToken can be thrown if authing with a cookie, the token cokie is empty
 	ErrEmptyCookieToken = errors.New("cookie token is empty")
-
-	// ErrInvalidSigningAlgorithm indicates signing algorithm is invalid, needs to be HS256, HS384, HS512, RS256, RS384 or RS512
-	ErrInvalidSigningAlgorithm = errors.New("invalid signing algorithm")
 
 	// ErrNoPrivKeyFile indicates that the given private key is unreadable
 	ErrNoPrivKeyFile = errors.New("private key file unreadable")
