@@ -7,12 +7,14 @@ import (
 )
 
 type Builder struct {
-	db    *gorm.DB
-	field string
-	order string
-	paginate *paginate.Paginate
-	Pageinfo paginate.PageInfo
-	Total int32
+	db        *gorm.DB
+	field     string
+	order     string
+	paginate  *paginate.Paginate
+	Pageinfo  *paginate.PageInfo
+	Total     int32
+	needTotal bool
+	isOffSet  bool
 }
 
 func NewBuild(db *gorm.DB) *Builder {
@@ -27,16 +29,19 @@ func (t *Builder) Field(field string) *Builder {
 }
 
 // only support string params
-func (t *Builder) Where(where string,params map[string]string) *Builder {
+func (t *Builder) Where(where string, params map[string]string) *Builder {
 	var p []string
-	for _,v := range params {
-		p = append(p,v)
+	for _, v := range params {
+		p = append(p, v)
 	}
-	t.db = t.db.Where(where,p)
+	t.db = t.db.Where(where, p)
 	return t
 }
 
-func (t *Builder) Paginate(p *paginate.Paginate) *Builder {
+func (t *Builder) PaginateCursor(p *paginate.Paginate) *Builder {
+	if p == nil {
+		return t
+	}
 	if p.First == 0 && p.After == "" {
 		//向后分页 TODO
 	}
@@ -46,28 +51,24 @@ func (t *Builder) Paginate(p *paginate.Paginate) *Builder {
 	return t
 }
 
-func (t *Builder) PaginateOffSet(p *paginate.Paginate) *Builder {
+func (t *Builder) PaginateOffSet(p *paginate.Paginate, needTotal bool) *Builder {
 	t.paginate = p
+	t.needTotal = needTotal
+	t.isOffSet = true
 	return t
 }
 
-func (t *Builder) parsePaginateOffSet(){
+func (t *Builder) parsePaginateOffSet() {
 	if t.paginate == nil {
 		return
 	}
-	var limit,page int
+	var limit, page int
 	if t.paginate.First != 0 && t.paginate.After != "" {
-		//向后分页
-		page, _ = strconv.Atoi(t.paginate.After)
+		if page, _ = strconv.Atoi(t.paginate.After); page == 0 {
+			t.paginate.After = "1"
+			page = 1
+		}
 		limit = int(t.paginate.First)
-	}
-	if t.paginate.Last != 0 && t.paginate.Before != "" {
-		//向前分页
-		page, _ = strconv.Atoi(t.paginate.Before)
-		limit = int(t.paginate.Last)
-	}
-	if page == 0 {
-		page = 1
 	}
 	t.db = t.db.Offset((int32(page) - 1) * t.paginate.First).Limit(limit)
 }
@@ -78,8 +79,8 @@ func (t *Builder) Order(order string) *Builder {
 }
 
 // 返回即将执行的的Db
-func (t *Builder) Prepare(count bool) *gorm.DB {
-	if count {
+func (t *Builder) Prepare() *gorm.DB {
+	if t.needTotal {
 		t.db.Count(&t.Total)
 	}
 	t.parsePaginateOffSet()
@@ -90,4 +91,17 @@ func (t *Builder) Prepare(count bool) *gorm.DB {
 		t.db = t.db.Order(t.order)
 	}
 	return t.db
+}
+
+func (t *Builder) GetPageInfo(count int)(*paginate.PageInfo,int32) {
+	if t.paginate == nil {
+		return nil,t.Total
+	}
+	if t.isOffSet {
+		t.Pageinfo = &paginate.PageInfo{
+			HasPreviousPage:      t.paginate.After != "1",
+			HasNextPage: int32(count) == t.paginate.First,
+		}
+	}
+	return t.Pageinfo,t.Total
 }
