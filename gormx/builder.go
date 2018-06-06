@@ -8,6 +8,7 @@ import (
 
 type Builder struct {
 	db        *gorm.DB
+	countDb   *gorm.DB
 	field     string
 	order     string
 	paginate  *paginate.Paginate
@@ -32,7 +33,7 @@ func (t *Builder) Field(field string) *Builder {
 func (t *Builder) Where(where string, params map[string]string) *Builder {
 	var p []string
 	for k, v := range params {
-		if f:=k[0]; f > 96 && f < 123 {
+		if f := k[0]; f > 96 && f < 123 {
 			p = append(p, v)
 		}
 	}
@@ -83,7 +84,7 @@ func (t *Builder) Order(order string) *Builder {
 // 返回即将执行的的Db
 func (t *Builder) Prepare() *gorm.DB {
 	if t.needTotal {
-		t.db.Count(&t.Total)
+		t.countDb = t.db
 	}
 	t.parsePaginateOffSet()
 	if t.field != "" {
@@ -95,22 +96,35 @@ func (t *Builder) Prepare() *gorm.DB {
 	return t.db
 }
 
-func (t *Builder) GetPageInfo(count int)(*paginate.PageInfo,int32) {
+func (t *Builder) Find(out interface{}) *gorm.DB {
+	if t.needTotal && t.countDb != nil {
+		if db := t.countDb.Model(out).Count(&t.Total);db.Error!= nil {
+			return db
+		}
+	}
+	return t.db.Find(out)
+}
+
+func (t *Builder) GetPageInfo(count int) (*paginate.PageInfo, int32) {
 	if t.paginate == nil {
-		return nil,t.Total
+		return nil, t.Total
 	}
 	if t.isOffSet {
 		t.Pageinfo = &paginate.PageInfo{
-			HasPreviousPage:      t.paginate.After != "1",
-			HasNextPage: int32(count) == t.paginate.First,
+			HasPreviousPage: t.paginate.After != "1",
+			HasNextPage:     int32(count) == t.paginate.First,
 		}
 	}
-	return t.Pageinfo,t.Total
+	return t.Pageinfo, t.Total
 }
 
-func (t *Builder)GetDb() *gorm.DB {
+func (t *Builder) GetDb() *gorm.DB {
 	if t != nil {
 		return t.db
 	}
 	return nil
+}
+
+func (t *Builder) SetDb(db *gorm.DB) {
+	t.db = db
 }
