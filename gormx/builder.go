@@ -28,11 +28,13 @@ func (t *Builder) Field(field string) *Builder {
 	return t
 }
 
-// only support string params
+// only support string params,only parameter which start low case will set to where parameters
 func (t *Builder) Where(where string, params map[string]string) *Builder {
 	var p []string
-	for _, v := range params {
-		p = append(p, v)
+	for k, v := range params {
+		if f:=k[0]; f > 96 && f < 123 {
+			p = append(p, v)
+		}
 	}
 	t.db = t.db.Where(where, p)
 	return t
@@ -104,4 +106,11 @@ func (t *Builder) GetPageInfo(count int)(*paginate.PageInfo,int32) {
 		}
 	}
 	return t.Pageinfo,t.Total
+}
+
+func (t *Builder)GetDb() *gorm.DB {
+	if t != nil {
+		return t.db
+	}
+	return nil
 }
