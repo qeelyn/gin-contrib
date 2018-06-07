@@ -10,19 +10,8 @@ type CheckAccess struct {
 
 func (t *CheckAccess) CheckAccessHandle() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userId := c.GetString("userId")
-		if userId == "" {
-			t.UnAuthorization(c, 401)
-			return
-		}
 		permission := t.GetPermissionFunc(c)
-		orgId := c.GetHeader("Qeelyn-Org-Id")
-		params := map[string]interface{}{}
-		if orgId != "" {
-			params["org_id"] = orgId
-		}
-		if !t.CheckFunc(c, userId, permission, params) {
-			t.UnAuthorization(c, 403)
+		if !t.CheckAccessExec(c, permission,map[string]interface{}{}) {
 			return
 		}
 		c.Next()
@@ -35,4 +24,22 @@ func (t *CheckAccess) UnAuthorization(c *gin.Context, status int) {
 	} else {
 		c.AbortWithStatus(status)
 	}
+}
+
+func (t *CheckAccess) CheckAccessExec(c *gin.Context, permission string,params map[string]interface{}) bool {
+	userId := c.GetString("userId")
+	if userId == "" {
+		t.UnAuthorization(c, 401)
+		return false
+	}
+
+	orgId := c.GetHeader("Qeelyn-Org-Id")
+	if orgId != "" {
+		params["org_id"] = orgId
+	}
+	if !t.CheckFunc(c, userId, permission, params) {
+		t.UnAuthorization(c, 403)
+		return false
+	}
+	return true
 }
