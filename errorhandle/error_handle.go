@@ -8,32 +8,32 @@ import (
 	"github.com/qeelyn/gin-contrib/ginzap"
 )
 
-func ErrorHandle(config map[string]interface{},logger *ginzap.Logger) gin.HandlerFunc {
+func ErrorHandle(config map[string]interface{}, logger *ginzap.Logger) gin.HandlerFunc {
 	bytes, err := ioutil.ReadFile(config["error-template"].(string))
 	if err != nil {
 		panic(err)
 	}
 	templates := map[string]errors.ErrorTemplate{}
 	yaml.Unmarshal(bytes, &templates)
-	eh := errors.NewErrorHandle(&templates)
+	eh := errors.NewErrorMessage(&templates)
 
 	return func(c *gin.Context) {
 		c.Next()
-		if len(c.Errors) > 0 {
+		if l := len(c.Errors); l > 0 {
 			var (
-				errArray = []*errors.ErrorDescription{}
+				errArray = make([]*errors.ErrorDescription, l)
 				status   = 500
 			)
-			if c.IsAborted() {
-				status = c.Writer.Status()
+
+			for i, e := range c.Errors {
+				logger.GetZap().Error(e.Err.Error())
+				errArray[i] = eh.GetErrorDescription(e.Err)
 			}
 
-			for _, e := range c.Errors {
-				logger.GetZap().Error(e.Err.Error())
-				errArray = append(errArray, eh.GetErrorDescription(e.Err))
-				if errArray[0].Code != 0 {
-					status = errArray[0].Code
-				}
+			if c.IsAborted() {
+				status = c.Writer.Status()
+			} else if c := errArray[0].Code; c != 0 {
+				status = c
 			}
 
 			c.JSON(status, gin.H{
