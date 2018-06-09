@@ -7,15 +7,15 @@ import (
 )
 
 type Builder struct {
-	db        *gorm.DB
-	countDb   *gorm.DB
-	field     string
-	order     string
-	paginate  *paginate.Paginate
-	Pageinfo  *paginate.PageInfo
-	Total     int32
-	needTotal bool
-	isOffSet  bool
+	db         *gorm.DB
+	countDb    *gorm.DB
+	field      string
+	order      string
+	pagination *paginate.Pagination
+	Pageinfo   *paginate.PageInfo
+	Total      int32
+	needTotal  bool
+	isOffSet   bool
 }
 
 func NewBuild(db *gorm.DB) *Builder {
@@ -41,7 +41,7 @@ func (t *Builder) Where(where string, params map[string]string) *Builder {
 	return t
 }
 
-func (t *Builder) PaginateCursor(p *paginate.Paginate) *Builder {
+func (t *Builder) PaginateCursor(p *paginate.Pagination) *Builder {
 	if p == nil {
 		return t
 	}
@@ -54,26 +54,26 @@ func (t *Builder) PaginateCursor(p *paginate.Paginate) *Builder {
 	return t
 }
 
-func (t *Builder) PaginateOffSet(p *paginate.Paginate, needTotal bool) *Builder {
-	t.paginate = p
+func (t *Builder) PaginateOffSet(p *paginate.Pagination, needTotal bool) *Builder {
+	t.pagination = p
 	t.needTotal = needTotal
 	t.isOffSet = true
 	return t
 }
 
 func (t *Builder) parsePaginateOffSet() {
-	if t.paginate == nil {
+	if t.pagination == nil {
 		return
 	}
 	var limit, page int
-	if t.paginate.First != 0 && t.paginate.After != "" {
-		if page, _ = strconv.Atoi(t.paginate.After); page == 0 {
-			t.paginate.After = "1"
+	if t.pagination.First != 0 && t.pagination.After != "" {
+		if page, _ = strconv.Atoi(t.pagination.After); page == 0 {
+			t.pagination.After = "1"
 			page = 1
 		}
-		limit = int(t.paginate.First)
+		limit = int(t.pagination.First)
 	}
-	t.db = t.db.Offset((int32(page) - 1) * t.paginate.First).Limit(limit)
+	t.db = t.db.Offset((int32(page) - 1) * t.pagination.First).Limit(limit)
 }
 
 func (t *Builder) Order(order string) *Builder {
@@ -106,13 +106,13 @@ func (t *Builder) Find(out interface{}) *gorm.DB {
 }
 
 func (t *Builder) GetPageInfo(count int) (*paginate.PageInfo, int32) {
-	if t.paginate == nil {
+	if t.pagination == nil {
 		return nil, t.Total
 	}
 	if t.isOffSet {
 		t.Pageinfo = &paginate.PageInfo{
-			HasPreviousPage: t.paginate.After != "1",
-			HasNextPage:     int32(count) == t.paginate.First,
+			HasPreviousPage: t.pagination.After != "1",
+			HasNextPage:     int32(count) == t.pagination.First,
 		}
 	}
 	return t.Pageinfo, t.Total
