@@ -1,9 +1,12 @@
 package auth
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"net/http"
+)
 
 type CheckAccess struct {
-	CheckFunc         func(*gin.Context, string, string, map[string]interface{}) bool
+	CheckFunc         func(*gin.Context, string, string, map[string]interface{}) int
 	GetPermissionFunc func(*gin.Context) string
 	UnauthorizedFunc  func(c *gin.Context, status int)
 }
@@ -11,7 +14,7 @@ type CheckAccess struct {
 func (t *CheckAccess) CheckAccessHandle() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		permission := t.GetPermissionFunc(c)
-		if !t.CheckAccessExec(c, permission,map[string]interface{}{}) {
+		if !t.CheckAccessExec(c, permission, map[string]interface{}{}) {
 			return
 		}
 		c.Next()
@@ -26,7 +29,7 @@ func (t *CheckAccess) UnAuthorization(c *gin.Context, status int) {
 	}
 }
 
-func (t *CheckAccess) CheckAccessExec(c *gin.Context, permission string,params map[string]interface{}) bool {
+func (t *CheckAccess) CheckAccessExec(c *gin.Context, permission string, params map[string]interface{}) bool {
 	userId := c.GetString("userId")
 	if userId == "" {
 		t.UnAuthorization(c, 401)
@@ -37,8 +40,8 @@ func (t *CheckAccess) CheckAccessExec(c *gin.Context, permission string,params m
 	if orgId != "" {
 		params["org_id"] = orgId
 	}
-	if !t.CheckFunc(c, userId, permission, params) {
-		t.UnAuthorization(c, 403)
+	if sc := t.CheckFunc(c, userId, permission, params); sc != http.StatusOK {
+		t.UnAuthorization(c, sc)
 		return false
 	}
 	return true
