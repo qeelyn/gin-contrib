@@ -8,6 +8,8 @@ import (
 	"github.com/qeelyn/gin-contrib/ginzap"
 )
 
+var ErrMessage *errors.ErrorMessage
+
 func ErrorHandle(config map[string]interface{}, logger *ginzap.Logger) gin.HandlerFunc {
 	bytes, err := ioutil.ReadFile(config["error-template"].(string))
 	if err != nil {
@@ -15,7 +17,7 @@ func ErrorHandle(config map[string]interface{}, logger *ginzap.Logger) gin.Handl
 	}
 	templates := map[string]errors.ErrorTemplate{}
 	yaml.Unmarshal(bytes, &templates)
-	eh := errors.NewErrorMessage(&templates)
+	ErrMessage = errors.NewErrorMessage(&templates)
 
 	return func(c *gin.Context) {
 		c.Next()
@@ -27,7 +29,7 @@ func ErrorHandle(config map[string]interface{}, logger *ginzap.Logger) gin.Handl
 
 			for i, e := range c.Errors {
 				logger.GetZap().Error(e.Err.Error())
-				errArray[i] = eh.GetErrorDescription(e.Err)
+				errArray[i] = ErrMessage.GetErrorDescription(e.Err)
 			}
 
 			if c.IsAborted() {

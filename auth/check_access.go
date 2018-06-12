@@ -6,7 +6,7 @@ import (
 )
 
 type CheckAccess struct {
-	CheckFunc         func(*gin.Context, string, string, map[string]interface{}) int
+	CheckFunc         func(*http.Request, string, string, map[string]interface{}) int
 	GetPermissionFunc func(*gin.Context) string
 	UnauthorizedFunc  func(c *gin.Context, status int)
 }
@@ -40,7 +40,7 @@ func (t *CheckAccess) CheckAccessExec(c *gin.Context, permission string, params 
 	if orgId != "" {
 		params["org_id"] = orgId
 	}
-	if sc := t.CheckFunc(c, userId, permission, params); sc != http.StatusOK {
+	if sc := t.CheckFunc(c.Request, userId, permission, params); sc != http.StatusOK {
 		t.UnAuthorization(c, sc)
 		return false
 	}
