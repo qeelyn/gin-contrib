@@ -31,13 +31,13 @@ func (t *Builder) Field(field string) *Builder {
 
 // only support string params,only parameter which start low case will set to where parameters
 func (t *Builder) Where(where string, params map[string]string) *Builder {
-	var p []string
+	var p []interface{}
 	for k, v := range params {
 		if f := k[0]; f > 96 && f < 123 {
 			p = append(p, v)
 		}
 	}
-	t.db = t.db.Where(where, p)
+	t.db = t.db.Where(where, p...)
 	return t
 }
 
@@ -98,7 +98,7 @@ func (t *Builder) Prepare() *gorm.DB {
 
 func (t *Builder) Find(out interface{}) *gorm.DB {
 	if t.needTotal && t.countDb != nil {
-		if db := t.countDb.Model(out).Count(&t.Total);db.Error!= nil {
+		if db := t.countDb.Model(out).Count(&t.Total); db.Error != nil {
 			return db
 		}
 	}
