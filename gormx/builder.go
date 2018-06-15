@@ -4,6 +4,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/qeelyn/go-common/protobuf/paginate"
 	"strconv"
+	"github.com/qeelyn/go-common/protobuf/request"
 )
 
 type Builder struct {
@@ -127,4 +128,20 @@ func (t *Builder) GetDb() *gorm.DB {
 
 func (t *Builder) SetDb(db *gorm.DB) {
 	t.db = db
+}
+
+// ls must be point to point of struct
+// you can pass ls value like :
+//   data := &fund.FundProd{}
+//   gormx.HandleNodeRequest(id,data,req)
+func HandleNodeRequest(db *gorm.DB,id string, ls interface{}, req *request.NodeRequest) (*Builder, error) {
+	if id != "" {
+		db = db.Where("id = ?", id)
+	}
+	builder := NewBuild(db)
+	db = builder.Field(req.Fields).Where(req.Where, req.WhereParams).Order(req.Order).Prepare()
+	if err := db.First(ls).Error; err != nil {
+		return builder, err
+	}
+	return builder, nil
 }
