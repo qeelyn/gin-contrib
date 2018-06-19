@@ -130,10 +130,10 @@ func (t *Builder) SetDb(db *gorm.DB) {
 	t.db = db
 }
 
-// ls must be point to point of struct
+// ls must be point to struct
 // you can pass ls value like :
 //   data := &fund.FundProd{}
-//   gormx.HandleNodeRequest(id,data,req)
+//   gormx.HandleNodeRequest(app.Db,id,data,req)
 func HandleNodeRequest(db *gorm.DB,id string, ls interface{}, req *request.NodeRequest) (*Builder, error) {
 	if id != "" {
 		db = db.Where("id = ?", id)
@@ -141,6 +141,29 @@ func HandleNodeRequest(db *gorm.DB,id string, ls interface{}, req *request.NodeR
 	builder := NewBuild(db)
 	db = builder.Field(req.Fields).Where(req.Where, req.WhereParams).Order(req.Order).Prepare()
 	if err := db.First(ls).Error; err != nil {
+		return builder, err
+	}
+	return builder, nil
+}
+
+// ls must be point to struct
+// you can pass ls value like :
+//   var data []fund.FundProd
+//   gormx.HandleListFetchRequest(app.Db,id,&data,req)
+func HandleListFetchRequest(db *gorm.DB, ls interface{}, req *request.FetchRequest) (*Builder, error) {
+	if l := len(req.Ids); l > 0 {
+		if l == 1 {
+			db = db.Where("id = ?", req.Ids[0])
+		} else {
+			db = db.Where("id in (?)", req.Ids)
+		}
+	}
+	builder := NewBuild(db)
+	builder.Field(req.Fields).Where(req.Where, req.WhereParams).
+		PaginateOffSet(req.Paginate, req.NeedTotal).
+		Order(req.Order).
+		Prepare()
+	if err := builder.Find(ls).Error; err != nil {
 		return builder, err
 	}
 	return builder, nil
