@@ -32,13 +32,18 @@ func (t *Builder) Field(field string) *Builder {
 
 // only support string params,only parameter which start low case will set to where parameters
 func (t *Builder) Where(where string, params map[string]string) *Builder {
-	var p []interface{}
+	var p []interface{} = make([]interface{},len(params))
+	var max uint8
 	for k, v := range params {
-		if f := k[0]; f > 96 && f < 123 {
-			p = append(p, v)
+		if f := k[0]; f >= 48 && f <= 57 {
+			index := f-48
+			if index > max {
+				max = index
+			}
+			p[index] = v
 		}
 	}
-	t.db = t.db.Where(where, p...)
+	t.db = t.db.Where(where, p[:max+1]...)
 	return t
 }
 
