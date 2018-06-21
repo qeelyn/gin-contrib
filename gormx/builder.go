@@ -32,6 +32,9 @@ func (t *Builder) Field(field string) *Builder {
 
 // only support string params,only parameter which start low case will set to where parameters
 func (t *Builder) Where(where string, params map[string]string) *Builder {
+	if where == "" {
+		return t
+	}
 	var p []interface{} = make([]interface{},len(params))
 	var max uint8
 	for k, v := range params {
