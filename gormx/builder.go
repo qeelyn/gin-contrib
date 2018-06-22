@@ -148,7 +148,7 @@ func HandleNodeRequest(db *gorm.DB,id string, ls interface{}, req *request.NodeR
 	}
 	builder := NewBuild(db)
 	db = builder.Field(req.Fields).Where(req.Where, req.WhereParams).Order(req.Order).Prepare()
-	if err := db.First(ls).Error; err != nil {
+	if err := db.Take(ls).Error; err != nil {
 		return builder, err
 	}
 	return builder, nil
