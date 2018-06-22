@@ -142,7 +142,7 @@ func (t *Builder) SetDb(db *gorm.DB) {
 // you can pass ls value like :
 //   data := &fund.FundProd{}
 //   gormx.HandleNodeRequest(app.Db,id,data,req)
-func HandleNodeRequest(db *gorm.DB,id string, ls interface{}, req *request.NodeRequest) (*Builder, error) {
+func HandleNodeRequest(db *gorm.DB,id interface{}, ls interface{}, req *request.NodeRequest) (*Builder, error) {
 	if id != "" {
 		db = db.Where("id = ?", id)
 	}
