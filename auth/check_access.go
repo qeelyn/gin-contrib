@@ -36,7 +36,7 @@ func (t *CheckAccess) CheckAccessExec(c *gin.Context, permission string, params 
 		return false
 	}
 
-	orgId := c.GetString("orgId")
+	orgId := c.GetString("orgid")
 	if orgId != "" {
 		params["org_id"] = orgId
 	}
