@@ -30,7 +30,7 @@ func (t *CheckAccess) UnAuthorization(c *gin.Context, status int) {
 }
 
 func (t *CheckAccess) CheckAccessExec(c *gin.Context, permission string, params map[string]interface{}) bool {
-	userId := c.GetString("userId")
+	userId := c.GetString("userid")
 	if userId == "" {
 		t.UnAuthorization(c, 401)
 		return false
