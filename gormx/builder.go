@@ -7,6 +7,7 @@ import (
 	"github.com/qeelyn/go-common/protobuf/request"
 )
 
+// 配合gorm的查询构建器,方便做一个分页相关的处理,及数据库获取数据
 type Builder struct {
 	db         *gorm.DB
 	countDb    *gorm.DB
@@ -19,6 +20,7 @@ type Builder struct {
 	isOffSet   bool
 }
 
+// 初始化builder,如果需要统计时,请先初始化DB.Table或Model
 func NewBuild(db *gorm.DB) *Builder {
 	return &Builder{
 		db: db,
@@ -105,18 +107,12 @@ func (t *Builder) Prepare() *gorm.DB {
 	return t.db
 }
 
-func (t *Builder) Find(out interface{}) *gorm.DB {
-	if t.needTotal && t.countDb != nil {
-		if db := t.countDb.Model(out).Count(&t.Total); db.Error != nil {
-			return db
-		}
-	}
-	return t.db.Find(out)
-}
-
 func (t *Builder) GetPageInfo(count int) (*paginate.PageInfo, int32) {
 	if t.pagination == nil {
-		return nil, t.Total
+		return nil, 0
+	}
+	if t.needTotal && t.countDb != nil {
+		t.countDb.Count(&t.Total);
 	}
 	if t.isOffSet {
 		t.Pageinfo = &paginate.PageInfo{
@@ -138,6 +134,13 @@ func (t *Builder) SetDb(db *gorm.DB) {
 	t.db = db
 }
 
+func (t *Builder) GetCountDb() *gorm.DB {
+	if t != nil {
+		return t.countDb
+	}
+	return nil
+}
+
 // ls must be point to struct
 // you can pass ls value like :
 //   data := &fund.FundProd{}
@@ -147,8 +150,8 @@ func HandleNodeRequest(db *gorm.DB,id interface{}, ls interface{}, req *request.
 		db = db.Where("id = ?", id)
 	}
 	builder := NewBuild(db)
-	db = builder.Field(req.Fields).Where(req.Where, req.WhereParams).Order(req.Order).Prepare()
-	if err := db.Take(ls).Error; err != nil {
+	builder.Field(req.Fields).Where(req.Where, req.WhereParams).Order(req.Order).Prepare()
+	if err := builder.GetDb().Take(ls).Error; err != nil {
 		return builder, err
 	}
 	return builder, nil
@@ -171,7 +174,7 @@ func HandleListFetchRequest(db *gorm.DB, ls interface{}, req *request.FetchReque
 		PaginateOffSet(req.Paginate, req.NeedTotal).
 		Order(req.Order).
 		Prepare()
-	if err := builder.Find(ls).Error; err != nil {
+	if err := builder.GetDb().Find(ls).Error; err != nil {
 		return builder, err
 	}
 	return builder, nil
