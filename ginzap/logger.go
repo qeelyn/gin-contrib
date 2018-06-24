@@ -27,7 +27,7 @@ func (l *Logger) SetZap(zap *zap.Logger) {
 	l.sugar = zap.Sugar()
 }
 
-func NewLogger(config map[string]interface{}) *Logger {
+func NewFileLogger(config map[string]interface{}) zapcore.Core {
 	// lumberjack.Logger is already safe for concurrent use, so we don't need to
 	// lock it.
 	fp := config["filename"].(string)
@@ -58,8 +58,18 @@ func NewLogger(config map[string]interface{}) *Logger {
 		w,
 		level,
 	)
-	zapLogger := zap.New(core)
+	return core
+}
 
+func NewStdLogger() zapcore.Core {
+	consoleEncoder := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
+	consoleDebugging := zapcore.Lock(os.Stdout)
+	return zapcore.NewCore(consoleEncoder, consoleDebugging, zap.DebugLevel)
+}
+
+func NewLogger(cores ...zapcore.Core) *Logger {
+	core := zapcore.NewTee(cores...)
+	zapLogger := zap.New(core)
 	return &Logger{zap: zapLogger, sugar: zapLogger.Sugar()}
 }
 
