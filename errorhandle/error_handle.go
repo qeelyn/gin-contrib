@@ -5,12 +5,12 @@ import (
 	"github.com/qeelyn/go-common/errors"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"github.com/qeelyn/gin-contrib/ginzap"
+	"github.com/qeelyn/go-common/logger"
 )
 
 var ErrMessage *errors.ErrorMessage
 
-func ErrorHandle(config map[string]interface{}, logger *ginzap.Logger) gin.HandlerFunc {
+func ErrorHandle(config map[string]interface{}, logger *logger.Logger) gin.HandlerFunc {
 	bytes, err := ioutil.ReadFile(config["error-template"].(string))
 	if err != nil {
 		panic(err)
