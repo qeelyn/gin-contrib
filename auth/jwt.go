@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -57,10 +56,10 @@ type GinJWTMiddleware struct {
 	HTTPStatusMessageFunc func(e error, c *gin.Context) string
 
 	// Private key file for asymmetric algorithms
-	PrivKeyFile string
+	PrivKeyFile []byte
 
 	// Public key file for asymmetric algorithms
-	PubKeyFile string
+	PubKeyFile []byte
 
 	// Private key
 	privKey *rsa.PrivateKey
@@ -102,13 +101,13 @@ var (
 )
 
 func (mw *GinJWTMiddleware) readKeys() error {
-	if mw.PrivKeyFile != "" {
+	if mw.PrivKeyFile != nil {
 		err := mw.privateKey()
 		if err != nil {
 			return err
 		}
 	}
-	if mw.PubKeyFile != "" {
+	if mw.PubKeyFile != nil {
 		err := mw.publicKey()
 		if err != nil {
 			return err
@@ -118,11 +117,10 @@ func (mw *GinJWTMiddleware) readKeys() error {
 }
 
 func (mw *GinJWTMiddleware) privateKey() error {
-	keyData, err := ioutil.ReadFile(mw.PrivKeyFile)
-	if err != nil {
+	if mw.PrivKeyFile == nil {
 		return ErrNoPrivKeyFile
 	}
-	key, err := jwt.ParseRSAPrivateKeyFromPEM(keyData)
+	key, err := jwt.ParseRSAPrivateKeyFromPEM(mw.PrivKeyFile)
 	if err != nil {
 		return ErrInvalidPrivKey
 	}
@@ -131,11 +129,10 @@ func (mw *GinJWTMiddleware) privateKey() error {
 }
 
 func (mw *GinJWTMiddleware) publicKey() error {
-	keyData, err := ioutil.ReadFile(mw.PubKeyFile)
-	if err != nil {
+	if mw.PubKeyFile == nil {
 		return ErrNoPubKeyFile
 	}
-	key, err := jwt.ParseRSAPublicKeyFromPEM(keyData)
+	key, err := jwt.ParseRSAPublicKeyFromPEM(mw.PubKeyFile)
 	if err != nil {
 		return ErrInvalidPubKey
 	}
