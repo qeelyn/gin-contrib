@@ -323,7 +323,7 @@ func (mw *GinJWTMiddleware) parseToken(c *gin.Context) (*jwt.Token, error) {
 	}
 
 	return jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
-		if strings.HasPrefix("HS", token.Method.Alg()) {
+		if strings.HasPrefix(token.Method.Alg(), "HS") {
 			return mw.Key, nil
 		} else {
 			return mw.pubKey, nil
