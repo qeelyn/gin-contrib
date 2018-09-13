@@ -7,14 +7,14 @@ import (
 	"github.com/uber/jaeger-client-go"
 )
 
-const GlobalSpan = "globalSpan"
-const GlobalTraceId = "globalTraceId"
+const GlobalSpan = "trace.spanid"
+const GlobalTraceId = "trace.traceid"
 
 type JeagerTracer struct {
 }
 
 func TracingField(c *gin.Context,z *zap.Logger) zap.Field {
-	return zap.String("trace.traceid",c.GetString(GlobalTraceId))
+	return zap.String(GlobalTraceId,c.GetString(GlobalTraceId))
 }
 
 func (JeagerTracer) Handle() gin.HandlerFunc {
