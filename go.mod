@@ -19,7 +19,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/opentracing/opentracing-go v1.0.2
-	github.com/pborman/uuid v0.0.0-20180909234540-25cd46ecac86
 	github.com/qeelyn/go-common v0.0.0-20180913030542-6794f306cb24
 	github.com/uber/jaeger-client-go v2.14.0+incompatible
 	go.uber.org/zap v1.9.1

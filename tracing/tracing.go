@@ -2,10 +2,11 @@ package tracing
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber/jaeger-client-go"
+	"github.com/uber/jaeger-client-go/utils"
 	"go.uber.org/zap"
+	"time"
 )
 
 var (
@@ -41,12 +42,37 @@ func TracingHandleFunc(config map[string]interface{}) gin.HandlerFunc {
 			tid := jaegerCtx.TraceID().String()
 			c.Set(GlobalTraceId, tid)
 		} else {
-			ctid := c.Request.Header.Get(GlobalTraceId)
-			if ctid == "" {
-				ctid = uuid.New().String()
+			var (
+				tid jaeger.TraceID
+				err error
+			)
+			gid := c.Request.Header.Get(GlobalTraceId)
+			if gid == "" {
+				tid = NewTraceId()
+			} else {
+				if tid,err = jaeger.TraceIDFromString(gid);err != nil {
+					c.Error(err)
+					tid = NewTraceId()
+				}
 			}
-			c.Set(GlobalTraceId, ctid)
+			c.Set(GlobalTraceId, tid.String())
 		}
 		c.Next()
 	}
+}
+
+func NewTraceId() jaeger.TraceID {
+	traceID := jaeger.TraceID{}
+	traceID.Low = randomID()
+	if traceID.Low ==0 {
+		traceID.Low = randomID()
+	}
+	return traceID
+}
+
+// randomID generates a random trace/span ID, using tracer.random() generator.
+// It never returns 0.
+func randomID() uint64 {
+	rng := utils.NewRand(time.Now().UnixNano())
+	return uint64(rng.Int63())
 }

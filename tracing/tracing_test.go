@@ -3,16 +3,17 @@ package tracing_test
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 	"github.com/opentracing/opentracing-go/log"
 	"github.com/qeelyn/gin-contrib/tracing"
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/config"
+	"github.com/uber/jaeger-client-go/utils"
 	"io"
 	"net/http"
 	"testing"
+	"time"
 )
 
 func ginServer(cnf map[string]interface{},fun func(context *gin.Context)) *http.Server {
@@ -80,7 +81,7 @@ func TestTracingHandleFunc(t *testing.T) {
 }
 
 func TestTracingHandleFuncNoTracer(t *testing.T) {
-	tid := uuid.New().String()
+	tid := tracing.NewTraceId().String()
 	cnf := map[string]interface{}{"useOpentracing": false}
 	go ginServer(cnf,func(context *gin.Context) {
 		sid := context.GetString(tracing.GlobalTraceId)
@@ -98,6 +99,19 @@ func TestTracingHandleFuncNoTracer(t *testing.T) {
 	if err1 != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestNewTraceId(t *testing.T) {
+	t.Log(time.Now().UnixNano())
+	rng := utils.NewRand(time.Now().UnixNano())
+	t.Log(rng.Int63())
+	t.Log(uint64(rng.Int63()))
+
+	tid,err := jaeger.TraceIDFromString("106a0d6722fd4b00")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(tid.String())
 }
 
 func newTracer() (opentracing.Tracer, io.Closer) {
