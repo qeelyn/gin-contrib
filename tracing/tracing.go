@@ -31,7 +31,7 @@ func TracingHandleFunc(config map[string]interface{}) gin.HandlerFunc {
 				opentracing.HTTPHeadersCarrier(c.Request.Header))
 
 			if err != nil {
-				c.Error(err)
+				c.Next()
 				return
 			} else if ctx == nil {
 				sban, _ := opentracing.StartSpanFromContext(c, c.Request.RequestURI)
