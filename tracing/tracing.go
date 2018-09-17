@@ -1,6 +1,7 @@
 package tracing
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber/jaeger-client-go"
@@ -10,53 +11,49 @@ import (
 )
 
 var (
-	GlobalTraceId = "trace.traceid"
+	// the header key is Qeelyn-Traceid,match the opentracing's tag id rule
+	ContextHeaderName  = "qeelyn-traceid"
+	RootSpanContextHeaderName = "qeelyn-spanid"
+	// accept http request,not use opentracing
+	HttpHeaderName = "qeelyn-tracing-id"
+)
+
+const (
+	// opentracing log key is trace.traceid
+	LoggerFieldKey = "traceid"
 )
 
 func TracingField(c *gin.Context, z *zap.Logger) zap.Field {
-	return zap.String(GlobalTraceId, c.GetString(GlobalTraceId))
+	//short key
+	return zap.String(LoggerFieldKey, c.GetString(ContextHeaderName))
 }
 
 // default receive http header `trace.traceid` for tracing
 // use 'useOpentracing': true to enable JaegerTracer
 func TracingHandleFunc(config map[string]interface{}) gin.HandlerFunc {
-	if tid, ok := config[GlobalTraceId]; ok {
-		GlobalTraceId = tid.(string)
+	if tid, ok := config["ContextHeaderName"]; ok {
+		ContextHeaderName = tid.(string)
 	}
 	useOpentracing, _ := config["useOpentracing"].(bool)
 	return func(c *gin.Context) {
-		if (useOpentracing) {
-			ctx, err := opentracing.GlobalTracer().Extract(
+		var (
+			tid jaeger.TraceID
+			err error
+		)
+		gid := c.Request.Header.Get(HttpHeaderName)
+		if useOpentracing && gid == "" {
+			ctx, _ := opentracing.GlobalTracer().Extract(
 				opentracing.HTTPHeaders,
 				opentracing.HTTPHeadersCarrier(c.Request.Header))
-
-			if err != nil {
-				c.Next()
-				return
-			} else if ctx == nil {
-				sban, _ := opentracing.StartSpanFromContext(c, c.Request.RequestURI)
-				ctx = sban.Context()
-				defer sban.Finish()
-			}
 			jaegerCtx := ctx.(jaeger.SpanContext)
-			tid := jaegerCtx.TraceID().String()
-			c.Set(GlobalTraceId, tid)
+			c.Set(RootSpanContextHeaderName, jaegerCtx)
+			tid = jaegerCtx.TraceID()
 		} else {
-			var (
-				tid jaeger.TraceID
-				err error
-			)
-			gid := c.Request.Header.Get(GlobalTraceId)
-			if gid == "" {
+			if tid, err = jaeger.TraceIDFromString(gid); err != nil {
 				tid = NewTraceId()
-			} else {
-				if tid,err = jaeger.TraceIDFromString(gid);err != nil {
-					c.Error(err)
-					tid = NewTraceId()
-				}
 			}
-			c.Set(GlobalTraceId, tid.String())
 		}
+		c.Set(ContextHeaderName, tid.String())
 		c.Next()
 	}
 }
@@ -64,7 +61,7 @@ func TracingHandleFunc(config map[string]interface{}) gin.HandlerFunc {
 func NewTraceId() jaeger.TraceID {
 	traceID := jaeger.TraceID{}
 	traceID.Low = randomID()
-	if traceID.Low ==0 {
+	if traceID.Low == 0 {
 		traceID.Low = randomID()
 	}
 	return traceID
@@ -75,4 +72,16 @@ func NewTraceId() jaeger.TraceID {
 func randomID() uint64 {
 	rng := utils.NewRand(time.Now().UnixNano())
 	return uint64(rng.Int63())
+}
+
+func SpanFromContext(g *gin.Context) (opentracing.SpanContext, error) {
+	span, ok := g.Get(RootSpanContextHeaderName)
+	if !ok {
+		return nil, errors.New("span not found")
+	}
+	if sctx, ok := span.(opentracing.SpanContext); ok {
+		return sctx, nil
+	} else {
+		return nil, errors.New("span is not SpanContext")
+	}
 }

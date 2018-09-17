@@ -9,11 +9,9 @@ import (
 	"github.com/qeelyn/gin-contrib/tracing"
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/config"
-	"github.com/uber/jaeger-client-go/utils"
 	"io"
 	"net/http"
 	"testing"
-	"time"
 )
 
 func ginServer(cnf map[string]interface{},fun func(context *gin.Context)) *http.Server {
@@ -33,7 +31,6 @@ func TestTracingHandleFunc(t *testing.T) {
 	defer closer.Close()
 	opentracing.SetGlobalTracer(tracer)
 
-
 	span := opentracing.StartSpan("test")
 	httpClient := &http.Client{}
 	httpReq, err := http.NewRequest("GET", "http://localhost:22222", nil)
@@ -47,20 +44,26 @@ func TestTracingHandleFunc(t *testing.T) {
 	span.Finish()
 
 	tid := span.Context().(jaeger.SpanContext).TraceID().String()
+	t.Log(tid)
 	cnf := map[string]interface{}{"useOpentracing": true}
-	go ginServer(cnf,func(context *gin.Context) {
-		request := context.Request
+	go ginServer(cnf,func(g *gin.Context) {
+		request := g.Request
 		tracer := opentracing.GlobalTracer()
-		sid := context.GetString(tracing.GlobalTraceId)
+		sid := g.GetString(tracing.ContextHeaderName)
 		if tid != sid {
 			t.Fatal("tid not equal")
-			context.Abort()
+			g.Abort()
 		}
-		spanCtx, _ := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(request.Header))
+		var spanCtx opentracing.SpanContext
+		if rs,ok := g.Get(tracing.RootSpanContextHeaderName);ok {
+			spanCtx =  rs.(opentracing.SpanContext)
+		} else {
+			spanCtx, _ = tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(request.Header))
+		}
 		sid2 := spanCtx.(jaeger.SpanContext).TraceID().String()
 		if tid != sid2 {
 			t.Fatal("tid not equal")
-			context.Abort()
+			g.Abort()
 		}
 		span := tracer.StartSpan("hello-opname", ext.RPCServerOption(spanCtx))
 		span.SetTag("hello-tag-key", "hello-tag-value")
@@ -70,21 +73,20 @@ func TestTracingHandleFunc(t *testing.T) {
 			log.String("event", "hello-handle"),
 			log.String("value", helloStr),
 		)
-		//ctx := opentracing.ContextWithSpan(context.Background(), span)
-		context.Writer.Write([]byte("good"))
+		//ctx := opentracing.ContextWithSpan(g.Background(), span)
+		g.Writer.Write([]byte("good"))
 	}).ListenAndServe()
 	_, err1 := httpClient.Do(httpReq)
 	if err1 != nil {
 		t.Fatal(err)
 	}
-
 }
 
 func TestTracingHandleFuncNoTracer(t *testing.T) {
 	tid := tracing.NewTraceId().String()
 	cnf := map[string]interface{}{"useOpentracing": false}
 	go ginServer(cnf,func(context *gin.Context) {
-		sid := context.GetString(tracing.GlobalTraceId)
+		sid := context.GetString(tracing.ContextHeaderName)
 		if tid != sid {
 			t.Fatal("tid not equal")
 			context.Abort()
@@ -94,24 +96,51 @@ func TestTracingHandleFuncNoTracer(t *testing.T) {
 
 	httpClient := &http.Client{}
 	httpReq, err := http.NewRequest("GET", "http://localhost:22222", nil)
-	httpReq.Header.Set(tracing.GlobalTraceId,tid)
+	httpReq.Header.Set(tracing.ContextHeaderName,tid)
 	_, err1 := httpClient.Do(httpReq)
 	if err1 != nil {
 		t.Fatal(err)
 	}
 }
 
-func TestNewTraceId(t *testing.T) {
-	t.Log(time.Now().UnixNano())
-	rng := utils.NewRand(time.Now().UnixNano())
-	t.Log(rng.Int63())
-	t.Log(uint64(rng.Int63()))
+func TestTracingHandleFuncInTracerSimple(t *testing.T) {
+	tracer, closer := newTracer()
+	defer closer.Close()
+	opentracing.SetGlobalTracer(tracer)
 
-	tid,err := jaeger.TraceIDFromString("106a0d6722fd4b00")
+	tid := tracing.NewTraceId().String()
+	cnf := map[string]interface{}{"useOpentracing": true}
+	go ginServer(cnf,func(context *gin.Context) {
+		sid := context.GetString(tracing.ContextHeaderName)
+		if tid != sid && tid != "" {
+			t.Fatal("tid not equal")
+			context.Abort()
+		}
+		context.Writer.Write([]byte("good"))
+	}).ListenAndServe()
+
+	httpClient := &http.Client{}
+	httpReq, err := http.NewRequest("GET", "http://localhost:22222", nil)
+	httpReq.Header.Set(tracing.ContextHeaderName,tid)
+	_, err1 := httpClient.Do(httpReq)
+	if err1 != nil {
+		t.Fatal(err)
+	}
+	tid = ""
+	httpClient = &http.Client{}
+	httpReq, err = http.NewRequest("GET", "http://localhost:22222", nil)
+	_, err1 = httpClient.Do(httpReq)
+	if err1 != nil {
+		t.Fatal(err)
+	}
+}
+
+
+func TestNewTraceId(t *testing.T) {
+	_,err := jaeger.TraceIDFromString("106a0d6722fd4b00")
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(tid.String())
 }
 
 func newTracer() (opentracing.Tracer, io.Closer) {
@@ -123,9 +152,6 @@ func newTracer() (opentracing.Tracer, io.Closer) {
 		},
 		Reporter: &config.ReporterConfig{
 			LogSpans: true,
-		},
-		Headers: &jaeger.HeadersConfig{
-			TraceContextHeaderName: tracing.GlobalTraceId,
 		},
 	}
 	tracer, closer, err := cfg.NewTracer(config.Logger(jaeger.StdLogger))
