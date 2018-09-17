@@ -46,12 +46,18 @@ func TracingHandleFunc(config map[string]interface{}) gin.HandlerFunc {
 				opentracing.HTTPHeaders,
 				opentracing.HTTPHeadersCarrier(c.Request.Header))
 			jaegerCtx := ctx.(jaeger.SpanContext)
-			c.Set(RootSpanContextHeaderName, jaegerCtx)
-			tid = jaegerCtx.TraceID()
-		} else {
+			if jaegerCtx.IsValid() {
+				c.Set(RootSpanContextHeaderName, jaegerCtx)
+				tid = jaegerCtx.TraceID()
+			} else {
+				tid = NewTraceId()
+			}
+		} else if gid != "" {
 			if tid, err = jaeger.TraceIDFromString(gid); err != nil {
 				tid = NewTraceId()
 			}
+		} else {
+			tid = NewTraceId()
 		}
 		c.Set(ContextHeaderName, tid.String())
 		c.Next()
