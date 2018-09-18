@@ -19,7 +19,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/opentracing/opentracing-go v1.0.2
-	github.com/qeelyn/go-common v0.0.0-20180918071529-8b1ff71455ca
+	github.com/qeelyn/go-common v0.0.0-20180918092101-b73914c242e7
 	github.com/uber/jaeger-client-go v2.14.0+incompatible
 	go.uber.org/zap v1.9.1
 	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect

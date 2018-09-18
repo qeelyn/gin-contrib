@@ -30,7 +30,7 @@ func ErrorHandle(config map[string]interface{}, logger *logger.Logger) gin.Handl
 			)
 
 			for i, e := range c.Errors {
-				logger.GetZap().Error(e.Err.Error(),defaultFields(c)...)
+				logger.Strict().Error(e.Err.Error(),defaultFields(c)...)
 				errArray[i] = ErrMessage.GetErrorDescription(e.Err)
 			}
 
