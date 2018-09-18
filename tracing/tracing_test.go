@@ -21,7 +21,7 @@ func ginServer(cnf map[string]interface{},fun func(context *gin.Context)) *http.
 		Handler: router,
 	}
 
-	router.Use(tracing.TracingHandleFunc(cnf))
+	router.Use(tracing.HandleFunc(cnf))
 	router.GET("/", fun)
 	return httpServer
 }

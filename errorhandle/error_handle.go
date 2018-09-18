@@ -2,10 +2,12 @@ package errorhandle
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/qeelyn/gin-contrib/tracing"
 	"github.com/qeelyn/go-common/errors"
+	"github.com/qeelyn/go-common/logger"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"github.com/qeelyn/go-common/logger"
 )
 
 var ErrMessage *errors.ErrorMessage
@@ -28,7 +30,7 @@ func ErrorHandle(config map[string]interface{}, logger *logger.Logger) gin.Handl
 			)
 
 			for i, e := range c.Errors {
-				logger.GetZap().Error(e.Err.Error())
+				logger.GetZap().Error(e.Err.Error(),defaultFields(c)...)
 				errArray[i] = ErrMessage.GetErrorDescription(e.Err)
 			}
 
@@ -43,4 +45,11 @@ func ErrorHandle(config map[string]interface{}, logger *logger.Logger) gin.Handl
 			})
 		}
 	}
+}
+
+func defaultFields(c *gin.Context) (fs []zap.Field) {
+	if tid := c.GetString(tracing.ContextHeaderName);tid != "" {
+		fs = append(fs, zap.String(tracing.LoggerFieldKey,tid))
+	}
+	return fs
 }

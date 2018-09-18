@@ -23,15 +23,15 @@ const (
 	LoggerFieldKey = "traceid"
 )
 
-func TracingField(c *gin.Context, z *zap.Logger) zap.Field {
+func LoggerField(c *gin.Context, z *zap.Logger) zap.Field {
 	//short key
 	return zap.String(LoggerFieldKey, c.GetString(ContextHeaderName))
 }
 
 // default receive http header `trace.traceid` for tracing
 // use 'useOpentracing': true to enable JaegerTracer
-func TracingHandleFunc(config map[string]interface{}) gin.HandlerFunc {
-	if tid, ok := config["ContextHeaderName"]; ok {
+func HandleFunc(config map[string]interface{}) gin.HandlerFunc {
+	if tid, ok := config[ContextHeaderName]; ok {
 		ContextHeaderName = tid.(string)
 	}
 	useOpentracing, _ := config["useOpentracing"].(bool)
