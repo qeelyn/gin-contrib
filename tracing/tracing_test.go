@@ -7,6 +7,7 @@ import (
 	"github.com/opentracing/opentracing-go/ext"
 	"github.com/opentracing/opentracing-go/log"
 	"github.com/qeelyn/gin-contrib/tracing"
+	"github.com/qeelyn/go-common/logger"
 	"github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/config"
 	"io"
@@ -49,7 +50,7 @@ func TestTracingHandleFunc(t *testing.T) {
 	go ginServer(cnf,func(g *gin.Context) {
 		request := g.Request
 		tracer := opentracing.GlobalTracer()
-		sid := g.GetString(tracing.ContextHeaderName)
+		sid := g.GetString(logger.ContextHeaderName)
 		if tid != sid {
 			t.Fatal("tid not equal")
 			g.Abort()
@@ -86,7 +87,7 @@ func TestTracingHandleFuncNoTracer(t *testing.T) {
 	tid := tracing.NewTraceId().String()
 	cnf := map[string]interface{}{"useOpentracing": false}
 	go ginServer(cnf,func(context *gin.Context) {
-		sid := context.GetString(tracing.ContextHeaderName)
+		sid := context.GetString(logger.ContextHeaderName)
 		if tid != sid {
 			t.Fatal("tid not equal")
 			context.Abort()
@@ -96,7 +97,7 @@ func TestTracingHandleFuncNoTracer(t *testing.T) {
 
 	httpClient := &http.Client{}
 	httpReq, err := http.NewRequest("GET", "http://localhost:22222", nil)
-	httpReq.Header.Set(tracing.ContextHeaderName,tid)
+	httpReq.Header.Set(logger.ContextHeaderName,tid)
 	_, err1 := httpClient.Do(httpReq)
 	if err1 != nil {
 		t.Fatal(err)
@@ -111,7 +112,7 @@ func TestTracingHandleFuncInTracerSimple(t *testing.T) {
 	tid := tracing.NewTraceId().String()
 	cnf := map[string]interface{}{"useOpentracing": true}
 	go ginServer(cnf,func(context *gin.Context) {
-		sid := context.GetString(tracing.ContextHeaderName)
+		sid := context.GetString(logger.ContextHeaderName)
 		if tid != sid && tid != "" {
 			t.Fatal("tid not equal")
 			context.Abort()
@@ -121,7 +122,7 @@ func TestTracingHandleFuncInTracerSimple(t *testing.T) {
 
 	httpClient := &http.Client{}
 	httpReq, err := http.NewRequest("GET", "http://localhost:22222", nil)
-	httpReq.Header.Set(tracing.ContextHeaderName,tid)
+	httpReq.Header.Set(logger.ContextHeaderName,tid)
 	_, err1 := httpClient.Do(httpReq)
 	if err1 != nil {
 		t.Fatal(err)
