@@ -17,11 +17,6 @@ var (
 	HttpHeaderName = "qeelyn-tracing-id"
 )
 
-const (
-	// opentracing log key is trace.traceid
-	LoggerFieldKey = "traceid"
-)
-
 // default receive http header `trace.traceid` for tracing
 // use 'useOpentracing': true to enable JaegerTracer
 func HandleFunc(config map[string]interface{}) gin.HandlerFunc {

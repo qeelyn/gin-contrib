@@ -63,6 +63,8 @@ github.com/qeelyn/go-common v0.0.0-20180918155536-39e43bf0a40d h1:U61hWbhUfyXHJq
 github.com/qeelyn/go-common v0.0.0-20180918155536-39e43bf0a40d/go.mod h1:CmjWa21/qtqaPX91lJBGb7YbGkpDvrj5zvwCJpXX2xU=
 github.com/qeelyn/go-common v0.0.0-20180918160729-417a9032d979 h1:iY/+RRU9XjWRIpLcCwZEVsCsjAVMXq2nKmtwNAM5j9o=
 github.com/qeelyn/go-common v0.0.0-20180918160729-417a9032d979/go.mod h1:CmjWa21/qtqaPX91lJBGb7YbGkpDvrj5zvwCJpXX2xU=
+github.com/qeelyn/go-common v0.0.0-20180918163346-2e73381a4f74 h1:vJp8smCGyuiYK1seMfJrsv07fU6sTo3rThoC+a5kfXA=
+github.com/qeelyn/go-common v0.0.0-20180918163346-2e73381a4f74/go.mod h1:CmjWa21/qtqaPX91lJBGb7YbGkpDvrj5zvwCJpXX2xU=
 github.com/spf13/afero v1.1.1/go.mod h1:j4pytiNVoe2o6bmDsKpLACNPDBIoEAkihy7loJ1B0CQ=
 github.com/spf13/cast v1.2.0/go.mod h1:r2rcYCSwa1IExKTDiTfzaxqT2FNHs8hODu4LnUfgKEg=
 github.com/spf13/jwalterweatherman v0.0.0-20180109140146-7c0cea34c8ec/go.mod h1:cQK4TGJAtQXfYWX+Ddv3mKDzgVb68N+wFjFa4jdeBTo=
