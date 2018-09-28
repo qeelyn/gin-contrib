@@ -64,8 +64,6 @@ func TestGinJWTMiddleware_Handle(t *testing.T) {
 	}
 	// no expire token
 	aheader := `Bearer eyJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE1MzgwNTE4ODAsInN1YiI6IjEyMiJ9.bgu0JhkL8ocPGExoATtyx6qRUxjT_ghz8EYaPh_sqBfqliy7mAwkg7OUjTUlv8fxwqy_1WvtyS8ZmYoFfv6ABQ`
-	// expire token
-	bheader := `Bearer eyJhbGciOiJSUzI1NiJ9.eyJleHAiOjE1MzgwNTI4ODAsImlhdCI6MTUzODA1MTg4MCwic3ViIjoiMTIyIn0.WRF2bYUb-R3JzJJ0NuqrgpaLGzCRmDjLdCpJQGZ7-TPGIDpb01JvEdAyWlE060zI2BZ5s9EWkc6_G4hk_JDPhA`
 	c := &gin.Context{
 		Request: &http.Request{
 			Header: map[string][]string{
@@ -77,7 +75,8 @@ func TestGinJWTMiddleware_Handle(t *testing.T) {
 	if c.Errors != nil {
 		t.Fatal(c.Errors.Errors())
 	}
-	//
+	// expire token
+	bheader := `Bearer eyJhbGciOiJSUzI1NiJ9.eyJleHAiOjE1MzgwNTI4ODAsImlhdCI6MTUzODA1MTg4MCwic3ViIjoiMTIyIn0.WRF2bYUb-R3JzJJ0NuqrgpaLGzCRmDjLdCpJQGZ7-TPGIDpb01JvEdAyWlE060zI2BZ5s9EWkc6_G4hk_JDPhA`
 	c1 := &gin.Context{
 		Request: &http.Request{
 			Header: map[string][]string{
@@ -87,6 +86,19 @@ func TestGinJWTMiddleware_Handle(t *testing.T) {
 	}
 	am.Handle()(c1)
 	if c1.Errors == nil {
+		t.Fatal("it should be happen error")
+	}
+	//bad
+	cheader := `Bearer eyJhbGciOiJSUzI1NiJ9.eyJleHAiOjE1MzgwNTI4ODAsImlhdCI6MTUzODA1MTg4MCwic3ViIjoiMTIyIn0.WRF2bYUb-R3JzJJ0NuqrgpaLGzCRmDjLdCpJQGZ7-TPGIDpb01JvEdAyWlE060zI2BZ5s9EWkc6_G4hk_JDPhA-Bad`
+	c2 := &gin.Context{
+		Request: &http.Request{
+			Header: map[string][]string{
+				"Authorization": {cheader},
+			},
+		},
+	}
+	am.Handle()(c2)
+	if c2.Errors == nil {
 		t.Fatal("it should be happen error")
 	}
 
