@@ -4,9 +4,9 @@ replace (
 	golang.org/x/net => github.com/golang/net v0.0.0-20180811021610-c39426892332
 	golang.org/x/sys => github.com/golang/sys v0.0.0-20180810173357-98c5dad5d1a0
 	golang.org/x/text => github.com/golang/text v0.3.0
-	google.golang.org/appengine => gitee.com/githubmirror/appengine v1.1.0
-	google.golang.org/genproto => gitee.com/githubmirror/go-genproto v0.0.0-20180808183934-383e8b2c3b9e
-	google.golang.org/grpc => gitee.com/githubmirror/grpc-go v1.14.0
+	google.golang.org/appengine => github.com/golang/appengine v1.1.0
+	google.golang.org/genproto => github.com/google/go-genproto v0.0.0-20180808183934-383e8b2c3b9e
+	google.golang.org/grpc => github.com/grpc/grpc-go v1.14.0
 )
 
 require (
@@ -19,7 +19,8 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/opentracing/opentracing-go v1.0.2
-	github.com/qeelyn/go-common v0.0.0-20180928033840-d89dc9b02112
+	github.com/pkg/errors v0.8.0
+	github.com/qeelyn/go-common v0.0.0-20181014043006-7cbf7c95056e
 	github.com/uber/jaeger-client-go v2.14.0+incompatible
 	go.uber.org/zap v1.9.1
 	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect

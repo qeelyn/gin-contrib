@@ -11,9 +11,9 @@ import (
 	"time"
 )
 
-var(
+var (
 	algorithm = "RS256"
-	priKey = []byte(
+	priKey    = []byte(
 		`-----BEGIN PRIVATE KEY-----
 MIIBVgIBADANBgkqhkiG9w0BAQEFAASCAUAwggE8AgEAAkEA4b00JtFMZTavmKq/
 3MdC5XkFh3NfAj7uzJS47WC3o42pY3T/hvaVbQF2OGuypcu85w+akSvSUKw94xwJ
@@ -24,24 +24,26 @@ owIhAMP4UQLfI1sbNGN3myOuV7+Qa0zvSKikO4e02E58BM6xAiEAzNVF73RSkUu5
 aploa/f4QxRlx4FTDp95swRnaf036IsCIQCHPiMr1lEIDz/cDL1+sA5CUbep5TpC
 jhCXtOqX4BVBWg==
 -----END PRIVATE KEY-----
-`	)
+`    )
 	pubKey = []byte(
 		`-----BEGIN PUBLIC KEY-----
 MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAOG9NCbRTGU2r5iqv9zHQuV5BYdzXwI+
 7syUuO1gt6ONqWN0/4b2lW0BdjhrsqXLvOcPmpEr0lCsPeMcCaoHnnMCAwEAAQ==
 -----END PUBLIC KEY-----
-`	)
+`    )
 	ekey = "passw0rd"
 )
 
 func TestGinJWTMiddleware_Handle(t *testing.T) {
+	publicKey, _ := auth2.ParsePublicKey(pubKey)
+	privateKey, _ := auth2.ParsePrivateKey(priKey)
 	// the jwt middleware
 	am := &auth.GinJWTMiddleware{
 		BearerTokenValidator: &auth2.BearerTokenValidator{
-			Realm:            "test",
-			PrivKeyFile:      priKey,
-			PubKeyFile:       pubKey,
-			Key:              []byte(ekey),
+			Realm:         "test",
+			PrivKey:       privateKey,
+			PubKey:        publicKey,
+			EncryptionKey: []byte(ekey),
 		},
 		SigningAlgorithm: algorithm,
 		Timeout:          1 * time.Second,
