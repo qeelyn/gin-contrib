@@ -38,10 +38,6 @@ type GinJWTMiddleware struct {
 
 	// Duration that a jwt token is valid. Optional, defaults to one hour.
 	Timeout time.Duration
-	// Callback function that should perform the authorization of the authenticated user. Called
-	// only after an authentication success. Must return true on success, false on failure.
-	// Optional, default to success.
-	TokenValidator func(token *jwt.Token, c *gin.Context) bool
 
 	// User can define own UnauthorizedFunc func.if return true,request will abort
 	UnauthorizedHandle func(*gin.Context, int, string) bool
@@ -85,12 +81,6 @@ func (t *GinJWTMiddleware) Init() error {
 	t.TokenHeadName = strings.TrimSpace(t.TokenHeadName)
 	if len(t.TokenHeadName) == 0 {
 		t.TokenHeadName = "Bearer"
-	}
-
-	if t.TokenValidator == nil {
-		t.TokenValidator = func(token *jwt.Token, c *gin.Context) bool {
-			return true
-		}
 	}
 
 	if t.UnauthorizedHandle == nil {
@@ -152,7 +142,7 @@ func (t *GinJWTMiddleware) middlewareImpl(c *gin.Context) {
 		return
 	}
 
-	identity,err := t.Validate(c,token)
+	identity,err := t.BearerTokenValidator.Validate(c,token)
 	if err != nil {
 		t.unauthorized(c, http.StatusUnauthorized, t.HTTPStatusMessageFunc(err, c))
 		return

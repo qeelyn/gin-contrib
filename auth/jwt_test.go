@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"context"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
@@ -44,6 +45,16 @@ func TestGinJWTMiddleware_Handle(t *testing.T) {
 			PrivKey:       privateKey,
 			PubKey:        publicKey,
 			EncryptionKey: []byte(ekey),
+			TokenValidator: func(token *jwt.Token, c context.Context) error {
+				claims := token.Claims.(jwt.MapClaims)
+				if claims["jti"] == nil {
+					// the jwt is from login handle
+					return nil
+				} else {
+					return errors.New("no_found")
+				}
+			},
+
 		},
 		SigningAlgorithm: algorithm,
 		Timeout:          1 * time.Second,
@@ -54,15 +65,6 @@ func TestGinJWTMiddleware_Handle(t *testing.T) {
 		},
 		TokenLookup:   "header:Authorization",
 		TokenHeadName: "Bearer",
-		TokenValidator: func(token *jwt.Token, c *gin.Context) bool {
-			claims := token.Claims.(jwt.MapClaims)
-			if claims["jti"] == nil {
-				// the jwt is from login handle
-				return true
-			} else {
-				return false
-			}
-		},
 	}
 	// no expire token
 	aheader := `Bearer eyJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE1MzgwNTE4ODAsInN1YiI6IjEyMiJ9.bgu0JhkL8ocPGExoATtyx6qRUxjT_ghz8EYaPh_sqBfqliy7mAwkg7OUjTUlv8fxwqy_1WvtyS8ZmYoFfv6ABQ`
